@@ -26,6 +26,7 @@ export default function App() {
   const { isAuthenticated, loading, profile, signOut } = useAuth();
   const [page, setPage] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
 
   // Tela de loading inicial (verifica sessão salva)
   if (loading) return (
@@ -82,11 +83,11 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar user={user} setPage={setPage} />
         <div className="flex-1 overflow-hidden">
-          {page === "dashboard" && <Dashboard setPage={setPage} user={user} />}
-          {page === "editor" && <Editor setPage={setPage} />}
-          {page === "projects" && <ProjectsPage setPage={setPage} />}
+          {page === "dashboard" && <Dashboard setPage={setPage} user={user} setProjectId={setSelectedProjectId} />}
+          {page === "editor" && <Editor setPage={setPage} user={user} projectId={selectedProjectId} />}
+          {page === "projects" && <ProjectsPage setPage={setPage} user={user} setProjectId={setSelectedProjectId} />}
           {page === "analytics" && <AnalyticsPage />}
-          {page === "render-queue" && <RenderQueuePage />}
+          {page === "render-queue" && <RenderQueuePage user={user} />}
           {page === "settings" && <SettingsPage user={user} setPage={setPage} />}
           {page === "pricing" && <PricingPage setPage={setPage} />}
         </div>

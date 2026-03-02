@@ -12,8 +12,8 @@ import { supabase } from "../lib/supabase";
 // ═══════════════════════════════════════════════
 export function useProjects(userId) {
   const [projects, setProjects] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // ── Buscar projetos ──
   const fetchProjects = useCallback(async (filter = {}) => {
@@ -100,9 +100,9 @@ export function useProjects(userId) {
 // useClips — CRUD de clipes de um projeto
 // ═══════════════════════════════════════════════
 export function useClips(projectId, userId) {
-  const [clips, setClips]   = useState([]);
+  const [clips, setClips] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState(null);
+  const [error, setError] = useState(null);
 
   const fetchClips = useCallback(async () => {
     if (!projectId) return;
@@ -126,19 +126,19 @@ export function useClips(projectId, userId) {
     const { data, error } = await supabase
       .from("clips")
       .insert([{
-        project_id:    projectId,
-        user_id:       userId,
-        name:          clipData.name,
-        start_time:    clipData.start,
-        end_time:      clipData.end,
-        platform:      clipData.platform || "tiktok",
-        quality:       clipData.quality  || "hd",
-        has_captions:  clipData.hasCaptions || false,
-        caption_text:  clipData.captionText || "",
+        project_id: projectId,
+        user_id: userId,
+        name: clipData.name,
+        start_time: clipData.start,
+        end_time: clipData.end,
+        platform: clipData.platform || "tiktok",
+        quality: clipData.quality || "hd",
+        has_captions: clipData.hasCaptions || false,
+        caption_text: clipData.captionText || "",
         caption_style: clipData.captionStyle || 0,
-        caption_font:  clipData.captionFont  || "Oswald",
-        caption_size:  clipData.captionSize  || 24,
-        zoom_level:    clipData.zoomLevel    || 100,
+        caption_font: clipData.captionFont || "Oswald",
+        caption_size: clipData.captionSize || 24,
+        zoom_level: clipData.zoomLevel || 100,
       }])
       .select()
       .single();
@@ -152,22 +152,22 @@ export function useClips(projectId, userId) {
   const updateClip = useCallback(async (id, updates) => {
     // Mapeia campos do frontend para snake_case do banco
     const dbUpdates = {};
-    if (updates.name          !== undefined) dbUpdates.name           = updates.name;
-    if (updates.start         !== undefined) dbUpdates.start_time     = updates.start;
-    if (updates.end           !== undefined) dbUpdates.end_time       = updates.end;
-    if (updates.platform      !== undefined) dbUpdates.platform       = updates.platform;
-    if (updates.quality       !== undefined) dbUpdates.quality        = updates.quality;
-    if (updates.status        !== undefined) dbUpdates.status         = updates.status;
-    if (updates.renderProgress!== undefined) dbUpdates.render_progress= updates.renderProgress;
-    if (updates.hasCaptions   !== undefined) dbUpdates.has_captions   = updates.hasCaptions;
-    if (updates.captionText   !== undefined) dbUpdates.caption_text   = updates.captionText;
-    if (updates.captionStyle  !== undefined) dbUpdates.caption_style  = updates.captionStyle;
-    if (updates.captionFont   !== undefined) dbUpdates.caption_font   = updates.captionFont;
-    if (updates.captionSize   !== undefined) dbUpdates.caption_size   = updates.captionSize;
-    if (updates.zoomLevel     !== undefined) dbUpdates.zoom_level     = updates.zoomLevel;
-    if (updates.fileSize      !== undefined) dbUpdates.file_size      = updates.fileSize;
-    if (updates.fileUrl       !== undefined) dbUpdates.file_url       = updates.fileUrl;
-    if (updates.exportedAt    !== undefined) dbUpdates.exported_at    = updates.exportedAt;
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.start !== undefined) dbUpdates.start_time = updates.start;
+    if (updates.end !== undefined) dbUpdates.end_time = updates.end;
+    if (updates.platform !== undefined) dbUpdates.platform = updates.platform;
+    if (updates.quality !== undefined) dbUpdates.quality = updates.quality;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.renderProgress !== undefined) dbUpdates.render_progress = updates.renderProgress;
+    if (updates.hasCaptions !== undefined) dbUpdates.has_captions = updates.hasCaptions;
+    if (updates.captionText !== undefined) dbUpdates.caption_text = updates.captionText;
+    if (updates.captionStyle !== undefined) dbUpdates.caption_style = updates.captionStyle;
+    if (updates.captionFont !== undefined) dbUpdates.caption_font = updates.captionFont;
+    if (updates.captionSize !== undefined) dbUpdates.caption_size = updates.captionSize;
+    if (updates.zoomLevel !== undefined) dbUpdates.zoom_level = updates.zoomLevel;
+    if (updates.fileSize !== undefined) dbUpdates.file_size = updates.fileSize;
+    if (updates.fileUrl !== undefined) dbUpdates.file_url = updates.fileUrl;
+    if (updates.exportedAt !== undefined) dbUpdates.exported_at = updates.exportedAt;
 
     const { data, error } = await supabase
       .from("clips")
@@ -248,7 +248,7 @@ export function useClips(projectId, userId) {
 // useAnalytics — dados de analytics do usuário
 // ═══════════════════════════════════════════════
 export function useAnalytics(userId) {
-  const [data, setData]     = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -312,7 +312,7 @@ export function useAnalytics(userId) {
 // useDashboard — view agregada (my_dashboard)
 // ═══════════════════════════════════════════════
 export function useDashboard() {
-  const [data, setData]     = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -335,4 +335,47 @@ export function useDashboard() {
   }, []);
 
   return { data, loading };
+}
+// ═══════════════════════════════════════════════
+// useStorage — upload e gestão de arquivos
+// ═══════════════════════════════════════════════
+export function useStorage(userId) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const uploadFile = useCallback(async (bucket, file, path) => {
+    if (!userId) return { success: false, error: "Usuário não autenticado" };
+    setUploading(true);
+    setError(null);
+
+    const fullPath = `${userId}/${path || file.name}`;
+
+    const { data, error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(fullPath, file, {
+        upsert: true,
+        cacheControl: '3600'
+      });
+
+    if (uploadError) {
+      setError(uploadError.message);
+      setUploading(false);
+      return { success: false, error: uploadError.message };
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(fullPath);
+
+    setUploading(false);
+    return { success: true, url: publicUrl, path: fullPath };
+  }, [userId]);
+
+  const deleteFile = useCallback(async (bucket, path) => {
+    const { error } = await supabase.storage.from(bucket).remove([path]);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  }, []);
+
+  return { uploadFile, deleteFile, uploading, error };
 }
