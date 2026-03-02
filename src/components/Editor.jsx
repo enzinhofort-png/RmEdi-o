@@ -24,6 +24,13 @@ const initialClips = [
     { id: "clp_3", projectId: "prj_1", name: "Intro da Live", start: 0, end: 30, platform: "youtube", status: "ready", captions: false, quality: "max", exportedAt: null, fileSize: null, renderProgress: 0 },
 ];
 
+const getYoutubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+};
+
 const getMediaType = (url) => {
     if (!url) return null;
     if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
@@ -178,7 +185,12 @@ export const Editor = ({ setPage, user, projectId }) => {
         loadTimeoutRef.current = setTimeout(() => {
             setLoading(false);
             setLoaded(true);
-            if (url.includes("demo") || url === "demo") setDuration(324);
+            if (url.includes("demo") || url === "demo") {
+                setDuration(324);
+            } else if (getMediaType(url) === "youtube") {
+                // If we can't fetch real duration, set a default of 5 mins for the UI
+                setDuration(300);
+            }
         }, 1200);
     };
 
@@ -359,7 +371,7 @@ export const Editor = ({ setPage, user, projectId }) => {
                                     getMediaType(url) === "video" ? (
                                         <video ref={videoRef} src={url} className="absolute inset-0 w-full h-full object-cover" onLoadedMetadata={(e) => setDuration(e.target.duration)} muted={muted} />
                                     ) : getMediaType(url) === "youtube" ? (
-                                        <iframe src={`https://www.youtube.com/embed/${url.split('v=')[1]?.split('&')[0]}?autoplay=1&mute=${muted ? 1 : 0}&controls=0`} className="absolute inset-0 w-full h-full pointer-events-none" allow="autoplay; encrypted-media" />
+                                        <iframe src={`https://www.youtube.com/embed/${getYoutubeId(url)}?autoplay=1&mute=${muted ? 1 : 0}&controls=0`} className="absolute inset-0 w-full h-full pointer-events-none" allow="autoplay; encrypted-media" />
                                     ) : null
                                 ) : (
                                     <div className="absolute inset-0 bg-gradient-to-br from-violet-900/20 via-gray-900 to-pink-900/10">
