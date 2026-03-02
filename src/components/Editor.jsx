@@ -63,10 +63,11 @@ export const Editor = ({ setPage, user, projectId }) => {
 
     // Manage local clips state for immediate UI feedback, 
     // but sync with realClips when they load
-    const [clips, setClips] = useState(initialClips);
+    const [clips, setClips] = useState(isGuest ? initialClips : []);
     const [selClip, setSelClip] = useState(null);
-    const [clipStart, setClipStart] = useState(12);
-    const [clipEnd, setClipEnd] = useState(45);
+    const [clipStart, setClipStart] = useState(0);
+    const [clipEnd, setClipEnd] = useState(30);
+
     const [showCaptions, setShowCaptions] = useState(true);
     const [captionText, setCaptionText] = useState("Legenda gerada automaticamente");
     const [captionStyle, setCaptionStyle] = useState(0);
@@ -84,18 +85,29 @@ export const Editor = ({ setPage, user, projectId }) => {
     const [genAI, setGenAI] = useState(false);
 
     useEffect(() => {
-        if (!isGuest && realClips.length > 0) {
-            setClips(realClips);
-            if (!selClip) {
+        if (!isGuest && !clipsLoading) {
+            setClips(realClips || []);
+
+            // Se não houver clipe selecionado ou o selecionado não existir mais, pega o primeiro
+            const currentExist = realClips?.find(c => c.id === selClip);
+            if (!currentExist && realClips?.length > 0) {
                 const first = realClips[0];
                 setSelClip(first.id);
-                setClipStart(first.start_time || first.start || 0);
-                setClipEnd(first.end_time || first.end || 30);
+                setClipStart(first.start_time || 0);
+                setClipEnd(first.end_time || 30);
                 setPreset(first.platform || "tiktok");
-                setCaptionText(first.caption_text || first.captionText || "");
+                setCaptionText(first.caption_text || "");
             }
+        } else if (isGuest && !selClip) {
+            // Setup inicial para guest
+            const first = initialClips[0];
+            setSelClip(first.id);
+            setClipStart(first.start);
+            setClipEnd(first.end);
+            setPreset(first.platform);
+            setCaptionText(first.captionText);
         }
-    }, [isGuest, realClips, selClip]);
+    }, [isGuest, realClips, clipsLoading, selClip]);
     const tlRef = useRef(null);
     const videoRef = useRef(null);
     const loadTimeoutRef = useRef(null);

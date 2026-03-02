@@ -29,52 +29,58 @@ export function useAuth() {
     return data;
   }, []);
 
-  // ── Inicialização: verifica sessão existente ──
+  // ── Inicialização & Sincronização de Sessão ──
   useEffect(() => {
-    const initAuth = async () => {
-      // 1. Tenta pegar sessão real do Supabase
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser(session.user);
-          const p = await loadProfile(session.user.id);
-          setProfile(p);
-          setLoading(false);
-          return;
-        }
-      } catch (e) { console.warn("Supabase não disponível, tentando demo..."); }
+    let mounted = true;
+    let authListener = null;
 
-      // 2. Se não houver sessão real, tenta a demo (bypass)
-      const savedDemo = localStorage.getItem("clipstudio_demo_user");
-      if (savedDemo) {
-        try {
-          const p = JSON.parse(savedDemo);
-          setUser({ id: p.id, email: p.email });
-          setProfile(p);
-        } catch (e) { localStorage.removeItem("clipstudio_demo_user"); }
-      }
-      setLoading(false);
+    const initAuth = async () => {
+      // Supabase v2: onAuthStateChange dispara INITIAL_SESSION imediatamente
+      // se houver uma sessão persistida. Não precisamos de getSession separado.
+      const { data } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if (!mounted) return;
+
+          if (session?.user) {
+            setUser(session.user);
+            const p = await loadProfile(session.user.id);
+            if (mounted) {
+              setProfile(p);
+              setLoading(false);
+            }
+          } else {
+            // Se não houver sessão do Supabase, tenta o modo Demo
+            const savedDemo = localStorage.getItem("clipstudio_demo_user");
+            if (savedDemo) {
+              try {
+                const p = JSON.parse(savedDemo);
+                setUser({ id: p.id, email: p.email });
+                setProfile(p);
+              } catch (e) {
+                localStorage.removeItem("clipstudio_demo_user");
+                setUser(null);
+                setProfile(null);
+              }
+            } else {
+              setUser(null);
+              setProfile(null);
+            }
+            setLoading(false);
+          }
+
+          if (event === "SIGNED_IN") setError(null);
+        }
+      );
+
+      authListener = data.subscription;
     };
 
     initAuth();
 
-    // Listener do Supabase
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          setUser(session.user);
-          const p = await loadProfile(session.user.id);
-          setProfile(p);
-        } else if (!localStorage.getItem("clipstudio_demo_user")) {
-          // Só limpa se não houver um usuário demo ativo
-          setUser(null);
-          setProfile(null);
-        }
-        if (event === "SIGNED_IN") setError(null);
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      if (authListener) authListener.unsubscribe();
+    };
   }, [loadProfile]);
 
   // ── Login com e-mail e senha ──

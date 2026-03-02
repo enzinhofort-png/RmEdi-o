@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
     Film, Download, HardDrive, Server, Plus, ChevronRight, Loader
 } from 'lucide-react';
@@ -7,9 +7,9 @@ import { Badge } from './ui/Badge';
 import { ProgressBar } from './ui/ProgressBar';
 import { formatBytes, formatTime, formatDate } from '../lib/utils';
 import { PRESETS } from '../lib/constants';
-import { useDashboard, useProjects, useClips, useStorage } from '../hooks/useData';
+import { useDashboard, useProjects, useExports, useStorage } from '../hooks/useData';
 
-// Mock data (normally would be passed as props or fetched in the component)
+// Mock data
 const mockProjects = [
     { id: "prj_1", name: "Stream Highlights - Fev 25", description: "Melhores momentos da live de sábado", clipCount: 8, totalDuration: 245, createdAt: "2026-02-25T14:30:00", updatedAt: "2026-02-25T18:45:00", thumb: "🎮", status: "active" },
     { id: "prj_2", name: "Podcast EP42 - Cortes", description: "Cortes do episódio sobre IA", clipCount: 5, totalDuration: 180, createdAt: "2026-02-23T10:00:00", updatedAt: "2026-02-24T09:15:00", thumb: "🎙️", status: "active" },
@@ -33,9 +33,11 @@ export const Dashboard = ({ setPage, user, setProjectId }) => {
     // Hooks
     const { data: dashData, loading: dashLoading } = useDashboard();
     const { projects: realProjects, loading: projectsLoading, createProject } = useProjects(isGuest ? null : user?.id);
+    const { exports: realExports, loading: exportsLoading } = useExports(isGuest ? null : user?.id);
     const { uploadFile, uploading: storageUploading } = useStorage(user?.id);
 
-    const displayProjects = isGuest ? mockProjects : realProjects.slice(0, 5);
+    const displayProjects = isGuest ? mockProjects : (realProjects || []).slice(0, 5);
+    const displayQueue = isGuest ? mockClips.filter(c => c.status !== "exported") : (realExports || []).filter(e => e.status !== "done").slice(0, 3);
 
     const handleFileUpload = async (e) => {
         const file = e.target.files?.[0];
@@ -46,7 +48,6 @@ export const Dashboard = ({ setPage, user, setProjectId }) => {
             const res = await uploadFile('exports', file, fileName);
 
             if (res.success) {
-                // Criar projeto automaticamente para o vídeo
                 await createProject({
                     name: file.name.replace(/\.[^/.]+$/, ""),
                     description: "Upload realizado via dashboard",
@@ -134,7 +135,7 @@ export const Dashboard = ({ setPage, user, setProjectId }) => {
                         <button onClick={() => setPage("projects")} className="text-violet-400 text-xs hover:underline flex items-center gap-1">Ver todos<ChevronRight size={12} /></button>
                     </div>
                     <div className="space-y-1.5">
-                        {displayProjects.slice(0, 5).map(p => (
+                        {displayProjects.map(p => (
                             <div key={p.id} onClick={() => { setProjectId(p.id); setPage("editor"); }} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-800/60 cursor-pointer transition-all group">
                                 <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center text-xl shrink-0">{p.thumb}</div>
                                 <div className="flex-1 min-w-0">
@@ -146,7 +147,7 @@ export const Dashboard = ({ setPage, user, setProjectId }) => {
                             </div>
                         ))}
                         {displayProjects.length === 0 && !projectsLoading && (
-                            <div className="py-8 text-center text-gray-600 text-sm">Nenhum projeto encontrado.</div>
+                            <div className="py-8 text-center text-gray-600 text-sm italic">Nenhum projeto encontrado.</div>
                         )}
                     </div>
                 </div>
@@ -158,16 +159,31 @@ export const Dashboard = ({ setPage, user, setProjectId }) => {
                         <button onClick={() => setPage("render-queue")} className="text-violet-400 text-xs hover:underline">Ver fila</button>
                     </div>
                     <div className="space-y-2.5 flex-1">
-                        {mockClips.filter(c => c.status !== "exported").map(c => (
-                            <div key={c.id} className="p-3 bg-gray-800/50 rounded-xl border border-gray-800">
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <span className="text-white text-xs font-medium truncate flex-1">{c.name}</span>
-                                    <Badge variant={c.status === "ready" ? "info" : "warning"} size="xs">{c.status === "ready" ? "Na fila" : "Renderizando"}</Badge>
+                        {displayQueue.map(item => {
+                            const isReal = !isGuest;
+                            const name = isReal ? item.clips?.name : item.name;
+                            const status = isReal ? item.status : item.status;
+                            const progress = isReal ? item.clips?.render_progress : item.renderProgress;
+                            const platform = isReal ? item.platform : item.platform;
+                            const start = isReal ? (item.clips?.start_time || 0) : item.start;
+                            const end = isReal ? (item.clips?.end_time || 30) : item.end;
+
+                            return (
+                                <div key={item.id} className="p-3 bg-gray-800/50 rounded-xl border border-gray-800">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-white text-xs font-medium truncate flex-1">{name || "Sem nome"}</span>
+                                        <Badge variant={status === "pending" || status === "ready" ? "info" : "warning"} size="xs">
+                                            {status === "pending" || status === "ready" ? "Na fila" : "Renderizando"}
+                                        </Badge>
+                                    </div>
+                                    {(status === "processing" || status === "rendering") && <ProgressBar value={progress || 0} color="violet" size="sm" animated />}
+                                    <p className="text-gray-600 text-[11px] mt-1.5">{PRESETS[platform]?.icon} {PRESETS[platform]?.label} · {formatTime(end - start)}</p>
                                 </div>
-                                {c.status === "rendering" && <ProgressBar value={c.renderProgress || 0} color="violet" size="sm" animated />}
-                                <p className="text-gray-600 text-[11px] mt-1.5">{PRESETS[c.platform]?.icon} {PRESETS[c.platform]?.label} · {formatTime(c.end - c.start)}</p>
-                            </div>
-                        ))}
+                            );
+                        })}
+                        {displayQueue.length === 0 && !exportsLoading && (
+                            <div className="py-8 text-center text-gray-600 text-xs italic">Nenhum item processando.</div>
+                        )}
                     </div>
                     <button onClick={() => setPage("render-queue")} className="mt-3 w-full py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white text-xs rounded-lg transition-colors">Gerenciar Fila</button>
                 </div>
@@ -178,7 +194,7 @@ export const Dashboard = ({ setPage, user, setProjectId }) => {
                 <div className="flex items-center justify-between mb-5">
                     <div>
                         <h2 className="text-white font-semibold">Exports da Semana</h2>
-                        <p className="text-gray-500 text-xs mt-0.5">171 exports nos últimos 7 dias</p>
+                        <p className="text-gray-500 text-xs mt-0.5">Visão geral da atividade</p>
                     </div>
                     <button onClick={() => setPage("analytics")} className="flex items-center gap-1 text-violet-400 text-xs hover:underline">Analytics completo<ChevronRight size={12} /></button>
                 </div>
