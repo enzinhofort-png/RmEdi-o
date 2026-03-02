@@ -49,124 +49,126 @@ export function AuthScreen() {
       await signIn({ email, password });
       return;
     }
-  }
-};
+    if (mode === "register") {
+      await signUp({ email, password, name });
+    }
+  };
 
-const switchMode = (m) => {
-  setMode(m);
-  setLocalError("");
-  setError(null);
-  setRecoverySent(false);
-};
+  const switchMode = (m) => {
+    setMode(m);
+    setLocalError("");
+    setError(null);
+    setRecoverySent(false);
+  };
 
-// ── Recuperação enviada ──
-if (recoverySent) return (
-  <Wrapper>
-    <PanelRight>
-      <div className="text-center">
-        <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
-          <CheckCircle size={28} className="text-emerald-400" />
+  // ── Recuperação enviada ──
+  if (recoverySent) return (
+    <Wrapper>
+      <PanelRight>
+        <div className="text-center">
+          <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <CheckCircle size={28} className="text-emerald-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">E-mail enviado!</h2>
+          <p className="text-gray-400 text-sm mb-6">
+            Verifique sua caixa de entrada para redefinir sua senha.
+          </p>
+          <button onClick={() => switchMode("login")} className="text-violet-400 text-sm hover:underline">
+            ← Voltar ao login
+          </button>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">E-mail enviado!</h2>
-        <p className="text-gray-400 text-sm mb-6">
-          Verifique sua caixa de entrada para redefinir sua senha.
-        </p>
-        <button onClick={() => switchMode("login")} className="text-violet-400 text-sm hover:underline">
-          ← Voltar ao login
+      </PanelRight>
+    </Wrapper>
+  );
+
+  // ── Recuperação de senha ──
+  if (mode === "recovery") return (
+    <Wrapper>
+      <PanelRight>
+        <button onClick={() => switchMode("login")} className="flex items-center gap-1 text-gray-500 hover:text-white text-sm mb-6 transition-colors">
+          <ChevronLeft size={15} />Voltar
         </button>
-      </div>
-    </PanelRight>
-  </Wrapper>
-);
-
-// ── Recuperação de senha ──
-if (mode === "recovery") return (
-  <Wrapper>
-    <PanelRight>
-      <button onClick={() => switchMode("login")} className="flex items-center gap-1 text-gray-500 hover:text-white text-sm mb-6 transition-colors">
-        <ChevronLeft size={15} />Voltar
-      </button>
-      <h2 className="text-2xl font-bold text-white mb-1">Recuperar senha</h2>
-      <p className="text-gray-400 text-sm mb-6">Enviaremos as instruções para seu e-mail.</p>
-      <ErrorBox msg={displayError} />
-      <Input icon={<Mail size={15} />} type="email" placeholder="Seu e-mail" value={email} onChange={setEmail} onEnter={handleSubmit} />
-      <SubmitBtn loading={loading} onClick={handleSubmit} label="Enviar link de recuperação" />
-    </PanelRight>
-  </Wrapper>
-);
-
-// ── Login / Registro ──
-return (
-  <Wrapper>
-    <PanelRight>
-      <h2 className="text-2xl font-bold text-white mb-1">
-        {mode === "login" ? "Bem-vindo de volta" : "Criar conta"}
-      </h2>
-      <p className="text-gray-400 text-sm mb-6">
-        {mode === "login" ? "Entre na sua conta para continuar" : "Comece a criar clipes profissionais"}
-      </p>
-
-      <ErrorBox msg={displayError} />
-
-      <div className="space-y-3">
-        {mode === "register" && (
-          <Input placeholder="Seu nome completo" value={name} onChange={setName} onEnter={handleSubmit} />
-        )}
+        <h2 className="text-2xl font-bold text-white mb-1">Recuperar senha</h2>
+        <p className="text-gray-400 text-sm mb-6">Enviaremos as instruções para seu e-mail.</p>
+        <ErrorBox msg={displayError} />
         <Input icon={<Mail size={15} />} type="email" placeholder="Seu e-mail" value={email} onChange={setEmail} onEnter={handleSubmit} />
-        <div className="relative">
-          <Input
-            icon={<Lock size={15} />}
-            type={showPass ? "text" : "password"}
-            placeholder="Senha"
-            value={password}
-            onChange={setPassword}
-            onEnter={handleSubmit}
-            suffix={
-              <button type="button" onClick={() => setShowPass(s => !s)} className="text-gray-500 hover:text-white transition-colors">
-                {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
-            }
-          />
+        <SubmitBtn loading={loading} onClick={handleSubmit} label="Enviar link de recuperação" />
+      </PanelRight>
+    </Wrapper>
+  );
+
+  // ── Login / Registro ──
+  return (
+    <Wrapper>
+      <PanelRight>
+        <h2 className="text-2xl font-bold text-white mb-1">
+          {mode === "login" ? "Bem-vindo de volta" : "Criar conta"}
+        </h2>
+        <p className="text-gray-400 text-sm mb-6">
+          {mode === "login" ? "Entre na sua conta para continuar" : "Comece a criar clipes profissionais"}
+        </p>
+
+        <ErrorBox msg={displayError} />
+
+        <div className="space-y-3">
+          {mode === "register" && (
+            <Input placeholder="Seu nome completo" value={name} onChange={setName} onEnter={handleSubmit} />
+          )}
+          <Input icon={<Mail size={15} />} type="email" placeholder="Seu e-mail" value={email} onChange={setEmail} onEnter={handleSubmit} />
+          <div className="relative">
+            <Input
+              icon={<Lock size={15} />}
+              type={showPass ? "text" : "password"}
+              placeholder="Senha"
+              value={password}
+              onChange={setPassword}
+              onEnter={handleSubmit}
+              suffix={
+                <button type="button" onClick={() => setShowPass(s => !s)} className="text-gray-500 hover:text-white transition-colors">
+                  {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              }
+            />
+          </div>
         </div>
-      </div>
 
-      {mode === "login" && (
-        <button onClick={() => switchMode("recovery")} className="text-violet-400 text-xs mt-2 block hover:underline">
-          Esqueceu a senha?
+        {mode === "login" && (
+          <button onClick={() => switchMode("recovery")} className="text-violet-400 text-xs mt-2 block hover:underline">
+            Esqueceu a senha?
+          </button>
+        )}
+
+        <SubmitBtn
+          loading={loading}
+          onClick={handleSubmit}
+          label={mode === "login" ? "Entrar" : "Criar Conta"}
+          icon={mode === "register" ? <UserPlus size={15} /> : null}
+        />
+
+        <Divider />
+
+        {/* OAuth */}
+        <div className="grid grid-cols-2 gap-3">
+          <OAuthBtn onClick={signInWithGoogle} label="Google" icon={<span className="font-bold text-base" style={{ fontFamily: "serif" }}>G</span>} />
+          <OAuthBtn onClick={signInWithGitHub} label="GitHub" icon={<Globe size={14} />} />
+        </div>
+
+        <button
+          onClick={signInAsGuest}
+          className="w-full mt-4 bg-violet-600/10 hover:bg-violet-600/20 border border-violet-500/20 text-violet-400 py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+        >
+          <Sparkles size={15} /> Entrar como Convidado (Teste)
         </button>
-      )}
 
-      <SubmitBtn
-        loading={loading}
-        onClick={handleSubmit}
-        label={mode === "login" ? "Entrar" : "Criar Conta"}
-        icon={mode === "register" ? <UserPlus size={15} /> : null}
-      />
-
-      <Divider />
-
-      {/* OAuth */}
-      <div className="grid grid-cols-2 gap-3">
-        <OAuthBtn onClick={signInWithGoogle} label="Google" icon={<span className="font-bold text-base" style={{ fontFamily: "serif" }}>G</span>} />
-        <OAuthBtn onClick={signInWithGitHub} label="GitHub" icon={<Globe size={14} />} />
-      </div>
-
-      <button
-        onClick={signInAsGuest}
-        className="w-full mt-4 bg-violet-600/10 hover:bg-violet-600/20 border border-violet-500/20 text-violet-400 py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
-      >
-        <Sparkles size={15} /> Entrar como Convidado (Teste)
-      </button>
-
-      <p className="text-center text-gray-500 text-sm mt-6">
-        {mode === "login" ? "Não tem conta? " : "Já tem conta? "}
-        <button onClick={() => switchMode(mode === "login" ? "register" : "login")} className="text-violet-400 hover:underline font-medium">
-          {mode === "login" ? "Criar conta grátis" : "Fazer login"}
-        </button>
-      </p>
-    </PanelRight>
-  </Wrapper>
-);
+        <p className="text-center text-gray-500 text-sm mt-6">
+          {mode === "login" ? "Não tem conta? " : "Já tem conta? "}
+          <button onClick={() => switchMode(mode === "login" ? "register" : "login")} className="text-violet-400 hover:underline font-medium">
+            {mode === "login" ? "Criar conta grátis" : "Fazer login"}
+          </button>
+        </p>
+      </PanelRight>
+    </Wrapper>
+  );
 }
 
 // ── Sub-componentes internos ──────────────────
