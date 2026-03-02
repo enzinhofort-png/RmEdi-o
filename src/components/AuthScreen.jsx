@@ -50,39 +50,11 @@ export function AuthScreen() {
       return;
     }
     if (mode === "register") {
-      const r = await signUp({ email, password, name });
-      if (r.success) setRegisterDone(true);
+      await signUp({ email, password, name });
+      // Flow simplified: if auto-confirm is on, useAuth will update 
+      // isAuthenticated automatically via onAuthStateChange.
     }
   };
-
-  const switchMode = (m) => {
-    setMode(m);
-    setLocalError("");
-    setError(null);
-    setRecoverySent(false);
-    setRegisterDone(false);
-  };
-
-  // ── Confirmar e-mail enviado ──
-  if (registerDone) return (
-    <Wrapper>
-      <PanelRight>
-        <div className="text-center">
-          <div className="w-16 h-16 bg-violet-500/10 border border-violet-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <CheckCircle size={28} className="text-violet-400" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Verifique seu e-mail</h2>
-          <p className="text-gray-400 text-sm leading-relaxed mb-6">
-            Enviamos um link de confirmação para <span className="text-white">{email}</span>.
-            Clique no link para ativar sua conta.
-          </p>
-          <button onClick={() => switchMode("login")} className="text-violet-400 text-sm hover:underline">
-            ← Voltar ao login
-          </button>
-        </div>
-      </PanelRight>
-    </Wrapper>
-  );
 
   // ── Recuperação enviada ──
   if (recoverySent) return (

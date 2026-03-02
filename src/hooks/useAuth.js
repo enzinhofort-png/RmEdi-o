@@ -109,7 +109,7 @@ export function useAuth() {
         },
       });
       if (error) throw error;
-      return { success: true, needsConfirmation: true };
+      return { success: true };
     } catch (err) {
       const msg = getErrorMessage(err);
       setError(msg);
