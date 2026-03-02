@@ -9,10 +9,16 @@ import { Badge } from './ui/Badge';
 import { formatBytes } from '../lib/utils';
 import { PLANS } from '../lib/constants';
 
-export const SettingsPage = ({ user, setPage }) => {
+export const SettingsPage = ({ user, setPage, updateProfile }) => {
     const [activeTab, setActiveTab] = useState("profile");
     const [prefs, setPrefs] = useState({ autoSave: true, aiCaptions: true, emailNotifs: false, smartFrame: true, darkMode: true, renderNotifs: true });
     const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    // Profile state initialized from props
+    const [name, setName] = useState(user?.name || "");
+    const [email, setEmail] = useState(user?.email || "");
+    const [bio, setBio] = useState(user?.bio || "");
 
     const tabs = [
         { id: "profile", icon: User, label: "Perfil" },
@@ -24,7 +30,31 @@ export const SettingsPage = ({ user, setPage }) => {
     ];
 
     const setPref = (k, v) => { setPrefs(p => ({ ...p, [k]: v })); setSaved(false); };
-    const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 3000); };
+
+    const handleSave = async () => {
+        if (!user || user.id === "guest_user") {
+            setSaved(true);
+            setTimeout(() => setSaved(false), 3000);
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const success = await updateProfile?.({
+                name,
+                email, // Note: email might be read-only in some Supabase configs if linked to auth.users
+                bio
+            });
+            if (success) {
+                setSaved(true);
+                setTimeout(() => setSaved(false), 3000);
+            }
+        } catch (err) {
+            console.error("Erro ao salvar perfil:", err);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <div className="flex-1 overflow-auto p-6">
@@ -52,12 +82,15 @@ export const SettingsPage = ({ user, setPage }) => {
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <div><label className="text-gray-400 text-xs mb-1 block font-medium">Nome completo</label><input defaultValue={user?.name} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-violet-500 transition-colors" /></div>
-                                <div><label className="text-gray-400 text-xs mb-1 block font-medium">E-mail</label><input defaultValue={user?.email} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-violet-500 transition-colors" /></div>
-                                <div><label className="text-gray-400 text-xs mb-1 block font-medium">Bio</label><textarea rows={3} placeholder="Conte um pouco sobre você..." className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-white text-sm outline-none resize-none focus:border-violet-500 transition-colors placeholder-gray-600" /></div>
+                                <div><label className="text-gray-400 text-xs mb-1 block font-medium">Nome completo</label><input value={name} onChange={e => { setName(e.target.value); setSaved(false); }} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-violet-500 transition-colors" /></div>
+                                <div><label className="text-gray-400 text-xs mb-1 block font-medium">E-mail</label><input value={email} onChange={e => { setEmail(e.target.value); setSaved(false); }} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-violet-500 transition-colors" /></div>
+                                <div><label className="text-gray-400 text-xs mb-1 block font-medium">Bio</label><textarea rows={3} value={bio} onChange={e => { setBio(e.target.value); setSaved(false); }} placeholder="Conte um pouco sobre você..." className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-white text-sm outline-none resize-none focus:border-violet-500 transition-colors placeholder-gray-600" /></div>
                             </div>
                             <div className="flex items-center gap-3 mt-4">
-                                <button onClick={handleSave} className="bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all">Salvar Alterações</button>
+                                <button onClick={handleSave} disabled={saving} className="bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2">
+                                    {saving && <RefreshCw size={13} className="animate-spin" />}
+                                    {saving ? "Salvando..." : "Salvar Alterações"}
+                                </button>
                                 {saved && <span className="text-emerald-400 text-xs flex items-center gap-1"><CheckCircle size={13} />Salvo com sucesso!</span>}
                             </div>
                         </div>

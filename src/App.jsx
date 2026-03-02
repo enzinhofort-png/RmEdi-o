@@ -19,7 +19,7 @@ import { SettingsPage } from "./components/SettingsPage";
 import { PricingPage } from "./components/PricingPage";
 
 export default function App() {
-  const { isAuthenticated, loading, profile, signOut } = useAuth();
+  const { isAuthenticated, loading, profile, signOut, updateProfile } = useAuth();
   const [page, setPage] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
@@ -84,7 +84,7 @@ export default function App() {
           {page === "projects" && <ProjectsPage setPage={setPage} user={user} setProjectId={setSelectedProjectId} />}
           {page === "analytics" && <AnalyticsPage />}
           {page === "render-queue" && <RenderQueuePage user={user} />}
-          {page === "settings" && <SettingsPage user={user} setPage={setPage} />}
+          {page === "settings" && <SettingsPage user={user} setPage={setPage} updateProfile={updateProfile} />}
           {page === "pricing" && <PricingPage setPage={setPage} />}
         </div>
       </div>
