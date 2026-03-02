@@ -3,8 +3,8 @@ import {
     Plus, Search, Grid, List, X, Check,
     Film, Clock, ChevronRight, FolderOpen
 } from 'lucide-react';
-import { Badge } from '../ui/Badge';
-import { EmptyState } from '../ui/EmptyState';
+import { Badge } from './ui/Badge';
+import { EmptyState } from './ui/EmptyState';
 import { formatTime, formatDate } from '../lib/utils';
 import { useProjects } from '../hooks/useData';
 

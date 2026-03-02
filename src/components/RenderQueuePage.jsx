@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import {
     Download, Play, Trash2, Cpu, CheckCircle
 } from 'lucide-react';
-import { Badge } from '../ui/Badge';
-import { ProgressBar } from '../ui/ProgressBar';
+import { Badge } from './ui/Badge';
+import { ProgressBar } from './ui/ProgressBar';
 import { formatTime, formatBytes, formatDate } from '../lib/utils';
 import { PRESETS } from '../lib/constants';
 

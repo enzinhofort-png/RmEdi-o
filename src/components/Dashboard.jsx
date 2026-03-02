@@ -2,9 +2,9 @@ import React, { useRef } from 'react';
 import {
     Film, Download, HardDrive, Server, Plus, ChevronRight, Loader
 } from 'lucide-react';
-import { Stat } from '../ui/Stat';
-import { Badge } from '../ui/Badge';
-import { ProgressBar } from '../ui/ProgressBar';
+import { Stat } from './ui/Stat';
+import { Badge } from './ui/Badge';
+import { ProgressBar } from './ui/ProgressBar';
 import { formatBytes, formatTime, formatDate } from '../lib/utils';
 import { PRESETS } from '../lib/constants';
 import { useDashboard, useProjects, useClips, useStorage } from '../hooks/useData';

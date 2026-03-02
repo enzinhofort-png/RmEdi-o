@@ -2,7 +2,7 @@ import React from 'react';
 import {
     Film, Download, Clock, Timer, TrendingUp
 } from 'lucide-react';
-import { ProgressBar } from '../ui/ProgressBar';
+import { ProgressBar } from './ui/ProgressBar';
 import { PRESETS } from '../lib/constants';
 
 // Mock data

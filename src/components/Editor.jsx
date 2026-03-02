@@ -6,11 +6,11 @@ import {
     Sparkles, ChevronLeft, Loader, Layout, Type, Music,
     AlertCircle, AlertTriangle, Copy, Trash2
 } from 'lucide-react';
-import { Badge } from '../ui/Badge';
-import { Modal } from '../ui/Modal';
-import { ProgressBar } from '../ui/ProgressBar';
-import { Toggle } from '../ui/Toggle';
-import { Tooltip } from '../ui/Tooltip';
+import { Badge } from './ui/Badge';
+import { Modal } from './ui/Modal';
+import { ProgressBar } from './ui/ProgressBar';
+import { Toggle } from './ui/Toggle';
+import { Tooltip } from './ui/Tooltip';
 import { formatTime, gid } from '../lib/utils';
 import {
     PRESETS, FONTS, CAPTION_STYLES, QUALITY_OPTIONS
