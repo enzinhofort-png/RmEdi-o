@@ -8,19 +8,15 @@ import { useState } from "react";
 import { useAuth } from "./hooks/useAuth";
 import { AuthScreen } from "./components/AuthScreen";
 
-// Importe as páginas do seu clipstudio-platform.jsx
-// (ou mova cada componente para seu próprio arquivo)
-import {
-  Sidebar,
-  TopBar,
-  Dashboard,
-  Editor,
-  ProjectsPage,
-  AnalyticsPage,
-  RenderQueuePage,
-  SettingsPage,
-  PricingPage,
-} from "./clipstudio-platform";
+import { Sidebar } from "./components/Sidebar";
+import { TopBar } from "./components/TopBar";
+import { Dashboard } from "./components/Dashboard";
+import { Editor } from "./components/Editor";
+import { ProjectsPage } from "./components/ProjectsPage";
+import { AnalyticsPage } from "./components/AnalyticsPage";
+import { RenderQueuePage } from "./components/RenderQueuePage";
+import { SettingsPage } from "./components/SettingsPage";
+import { PricingPage } from "./components/PricingPage";
 
 export default function App() {
   const { isAuthenticated, loading, profile, signOut } = useAuth();

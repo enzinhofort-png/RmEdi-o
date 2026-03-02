@@ -54,21 +54,6 @@ export const Editor = ({ setPage, user, projectId }) => {
     // Manage local clips state for immediate UI feedback, 
     // but sync with realClips when they load
     const [clips, setClips] = useState(initialClips);
-
-    useEffect(() => {
-        if (!isGuest && realClips.length > 0) {
-            setClips(realClips);
-            if (!selClip) {
-                const first = realClips[0];
-                setSelClip(first.id);
-                setClipStart(first.start_time || first.start || 0);
-                setClipEnd(first.end_time || first.end || 30);
-                setPreset(first.platform || "tiktok");
-                setCaptionText(first.caption_text || first.captionText || "");
-            }
-        }
-    }, [isGuest, realClips, selClip]);
-
     const [selClip, setSelClip] = useState(null);
     const [clipStart, setClipStart] = useState(12);
     const [clipEnd, setClipEnd] = useState(45);
@@ -87,6 +72,20 @@ export const Editor = ({ setPage, user, projectId }) => {
     const [saved, setSaved] = useState(true);
     const [saving, setSaving] = useState(false);
     const [genAI, setGenAI] = useState(false);
+
+    useEffect(() => {
+        if (!isGuest && realClips.length > 0) {
+            setClips(realClips);
+            if (!selClip) {
+                const first = realClips[0];
+                setSelClip(first.id);
+                setClipStart(first.start_time || first.start || 0);
+                setClipEnd(first.end_time || first.end || 30);
+                setPreset(first.platform || "tiktok");
+                setCaptionText(first.caption_text || first.captionText || "");
+            }
+        }
+    }, [isGuest, realClips, selClip]);
     const tlRef = useRef(null);
     const videoRef = useRef(null);
     const loadTimeoutRef = useRef(null);
