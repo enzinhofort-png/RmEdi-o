@@ -206,30 +206,92 @@ export function useClips(projectId, userId) {
     return { success: true };
   }, []);
 
-  // ── Simular export (em prod: chamar Edge Function) ──
-  const startExport = useCallback(async (id) => {
-    // 1. Marca como renderizando
-    await updateClip(id, { status: "rendering", renderProgress: 0 });
+  // ── Iniciar export (insere na tabela exports) ──
+  const startExport = useCallback(async (clipId, platform, quality) => {
+    if (!userId) return { success: false, error: "Usuário não autenticado" };
 
-    // 2. Simula progresso (substituir por polling da Edge Function real)
-    let progress = 0;
-    const interval = setInterval(async () => {
-      progress += Math.random() * 8 + 3;
-      if (progress >= 100) {
-        clearInterval(interval);
-        await updateClip(id, {
-          status: "exported",
-          renderProgress: 100,
-          exportedAt: new Date().toISOString(),
-          fileSize: Math.floor(Math.random() * 50000000) + 5000000,
+    // 1. Marca clipe como renderizando
+    await updateClip(clipId, { status: "rendering", renderProgress: 0 });
+
+    // 2. Insere na fila de exports
+    const { data, error } = await supabase
+      .from("exports")
+      .insert([{
+        clip_id: clipId,
+        user_id: userId,
+        platform: platform || "tiktok",
+        quality: quality || "hd",
+        status: "pending"
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      await updateClip(clipId, { status: "ready" });
+      return { success: false, error: error.message };
+    }
+
+    // Em ambiente de desenvolvimento, podemos simular o progresso aqui
+    // Em produção, uma Edge Function ou worker FFmpeg faria o update
+    if (process.env.NODE_ENV === "development") {
+      let progress = 0;
+      const interval = setInterval(async () => {
+        progress += Math.random() * 10 + 5;
+        if (progress >= 100) {
+          clearInterval(interval);
+          await supabase.from("exports").update({ status: "done", completed_at: new Date().toISOString() }).eq("id", data.id);
+          await updateClip(clipId, { status: "exported", renderProgress: 100, exportedAt: new Date().toISOString() });
+        } else {
+          await updateClip(clipId, { renderProgress: Math.min(99, Math.floor(progress)) });
+        }
+      }, 800);
+    }
+
+    return { success: true, export: data };
+  }, [userId, updateClip]);
+
+  // ── Transcrever clipe com IA (Edge Function) ──
+  const transcribeClip = useCallback(async (clipId, videoUrl) => {
+    if (!userId) return { success: false, error: "Usuário não autenticado" };
+
+    const { data, error } = await supabase.functions.invoke("transcribe", {
+      body: { clipId, videoUrl }
+    });
+
+    if (error) return { success: false, error: error.message };
+
+    // Opcional: Atualizar clips localmente se a function não fizer via DB
+    if (data?.text) {
+      setClips(prev => prev.map(c => c.id === clipId ? { ...c, caption_text: data.text, has_captions: true } : c));
+    }
+
+    return { success: true, text: data?.text };
+  }, [userId]);
+
+  // ── Detectar highlights com IA (Edge Function) ──
+  const detectHighlights = useCallback(async (videoUrl) => {
+    if (!userId) return { success: false, error: "Usuário não autenticado" };
+
+    const { data, error } = await supabase.functions.invoke("detect-highlights", {
+      body: { projectId, videoUrl }
+    });
+
+    if (error) return { success: false, error: error.message };
+
+    // Cria os clips sugeridos
+    if (data?.suggestions) {
+      for (const s of data.suggestions) {
+        await createClip({
+          name: s.name,
+          start: s.start,
+          end: s.end,
+          platform: "tiktok"
         });
-      } else {
-        await updateClip(id, { renderProgress: Math.min(99, Math.floor(progress)) });
       }
-    }, 400);
+    }
 
-    return { success: true };
-  }, [updateClip]);
+    return { success: true, suggestions: data?.suggestions };
+  }, [userId, projectId, createClip]);
 
   return {
     clips,
@@ -241,6 +303,8 @@ export function useClips(projectId, userId) {
     duplicateClip,
     deleteClip,
     startExport,
+    transcribeClip,
+    detectHighlights,
   };
 }
 
@@ -378,4 +442,60 @@ export function useStorage(userId) {
   }, []);
 
   return { uploadFile, deleteFile, uploading, error };
+}
+
+// ═══════════════════════════════════════════════
+// useExports — Monitoramento da fila de exportação
+// ═══════════════════════════════════════════════
+export function useExports(userId) {
+  const [exports, setExports] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchExports = useCallback(async () => {
+    if (!userId) return;
+    setLoading(true);
+    const { data } = await supabase
+      .from("exports")
+      .select(`
+        *,
+        clips (
+          name,
+          start_time,
+          end_time,
+          render_progress
+        )
+      `)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    setExports(data || []);
+    setLoading(false);
+  }, [userId]);
+
+  useEffect(() => { fetchExports(); }, [fetchExports]);
+
+  // Realtime: atualiza quando o status do export muda
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel("exports-realtime")
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "exports", filter: `user_id=eq.${userId}` },
+        () => fetchExports()
+      )
+      .on("postgres_changes",
+        { event: "update", schema: "public", table: "clips", filter: `user_id=eq.${userId}` },
+        () => fetchExports()
+      )
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [userId, fetchExports]);
+
+  const deleteExport = async (id) => {
+    const { error } = await supabase.from("exports").delete().eq("id", id);
+    if (!error) setExports(prev => prev.filter(e => e.id !== id));
+    return { success: !error };
+  };
+
+  return { exports, loading, refetch: fetchExports, deleteExport };
 }

@@ -45,7 +45,10 @@ export const Editor = ({ setPage, user, projectId }) => {
         loading: clipsLoading,
         createClip: dbCreateClip,
         updateClip: dbUpdateClip,
-        deleteClip: dbDeleteClip
+        deleteClip: dbDeleteClip,
+        startExport: dbStartExport,
+        transcribeClip: dbTranscribe,
+        detectHighlights: dbDetectHighlights
     } = useClips(isGuest ? null : projectId, isGuest ? null : user?.id);
 
     const [url, setUrl] = useState("");
@@ -194,18 +197,29 @@ export const Editor = ({ setPage, user, projectId }) => {
         }, 1200);
     };
 
-    const handleExport = () => {
-        setShowExportModal(false); setExporting(true); setExportProgress(0);
-        const iv = setInterval(() => {
-            setExportProgress(p => {
-                if (p >= 100) {
-                    clearInterval(iv);
-                    setTimeout(() => setExporting(false), 2000);
-                    return 100;
-                }
-                return p + Math.random() * 5 + 2;
-            });
-        }, 250);
+    const handleExport = async () => {
+        if (!selClip) return;
+        setShowExportModal(false);
+
+        if (isGuest) {
+            setExporting(true); setExportProgress(0);
+            const iv = setInterval(() => {
+                setExportProgress(p => {
+                    if (p >= 100) {
+                        clearInterval(iv);
+                        setTimeout(() => setExporting(false), 2000);
+                        return 100;
+                    }
+                    return p + Math.random() * 5 + 2;
+                });
+            }, 250);
+        } else {
+            const success = await dbStartExport(selClip, preset, quality);
+            if (success) {
+                // Redireciona para a fila para acompanhar
+                setPage("render-queue");
+            }
+        }
     };
 
     const addClip = async () => {
@@ -328,7 +342,23 @@ export const Editor = ({ setPage, user, projectId }) => {
                         <div className="w-52 bg-[#060609] border-r border-gray-800 flex flex-col shrink-0">
                             <div className="px-3 py-2.5 border-b border-gray-800 flex items-center justify-between">
                                 <span className="text-white text-xs font-semibold">Clipes <span className="text-gray-600">({clips.length})</span></span>
-                                <Tooltip text="Novo clipe (N)"><button onClick={addClip} className="p-1 text-violet-400 hover:bg-gray-800 rounded-lg transition-colors"><Plus size={14} /></button></Tooltip>
+                                <div className="flex items-center gap-1">
+                                    <Tooltip text="Sugerir Cortes IA">
+                                        <button
+                                            onClick={async () => {
+                                                if (!isGuest && url) {
+                                                    setSaving(true);
+                                                    await dbDetectHighlights(url);
+                                                    setSaving(false);
+                                                }
+                                            }}
+                                            className="p-1 text-emerald-400 hover:bg-gray-800 rounded-lg transition-colors"
+                                        >
+                                            <Sparkles size={14} />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip text="Novo clipe (N)"><button onClick={addClip} className="p-1 text-violet-400 hover:bg-gray-800 rounded-lg transition-colors"><Plus size={14} /></button></Tooltip>
+                                </div>
                             </div>
                             <div className="flex-1 overflow-auto p-2 space-y-1">
                                 {clips.map(c => (
@@ -476,7 +506,21 @@ export const Editor = ({ setPage, user, projectId }) => {
                                     <>
                                         <Toggle value={showCaptions} onChange={v => { setShowCaptions(v); setSaved(false); }} label="Legendas ativas" />
                                         <div><label className="text-gray-400 text-xs font-medium mb-2 block">Texto</label><textarea value={captionText} onChange={e => { setCaptionText(e.target.value); setSaved(false); }} rows={2} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm outline-none resize-none focus:border-violet-500 transition-colors" /></div>
-                                        <button onClick={() => { setGenAI(true); setTimeout(() => { setCaptionText("ESSE MOMENTO FOI INACREDITÁVEL 🔥"); setGenAI(false); }, 1500); }} disabled={genAI} className="w-full bg-violet-600/10 hover:bg-violet-600/20 border border-violet-500/20 text-violet-400 text-xs py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                        <button
+                                            onClick={async () => {
+                                                if (isGuest) {
+                                                    setGenAI(true);
+                                                    setTimeout(() => { setCaptionText("ESSE MOMENTO FOI INACREDITÁVEL 🔥"); setGenAI(false); }, 1500);
+                                                } else {
+                                                    setGenAI(true);
+                                                    const res = await dbTranscribe(selClip, url);
+                                                    if (res.success) setCaptionText(res.text);
+                                                    setGenAI(false);
+                                                }
+                                            }}
+                                            disabled={genAI || !selClip}
+                                            className="w-full bg-violet-600/10 hover:bg-violet-600/20 border border-violet-500/20 text-violet-400 text-xs py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                        >
                                             {genAI ? <><Loader size={13} className="animate-spin" />Gerando...</> : <><Sparkles size={13} />Gerar com IA</>}
                                         </button>
                                         <div><label className="text-gray-400 text-xs font-medium mb-2 block">Estilo</label>
