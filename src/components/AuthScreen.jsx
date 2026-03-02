@@ -22,7 +22,6 @@ export function AuthScreen() {
   const [showPass, setShowPass] = useState(false);
   const [localError, setLocalError] = useState("");
   const [recoverySent, setRecoverySent] = useState(false);
-  const [registerDone, setRegisterDone] = useState(false);
 
   const displayError = localError || error;
 
